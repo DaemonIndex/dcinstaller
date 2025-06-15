@@ -36,3 +36,6 @@ Script PowerShell per la configurazione automatica di workstation Windows in amb
 
 ## Note
 Il file CSV deve essere formattato con i campi: NomeHost, IpAddress, Netmask, Gateway, DnsServer, SystemLocale, TimeZone, Keyboard, ProductKey, separati da ;
+
+## Licenza
+Distribuito secondo i termini della [GNU GPL v3.0](LICENSE).

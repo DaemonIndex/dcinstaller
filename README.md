@@ -2,7 +2,7 @@
 
 ## Description
 
-PowerShell script for the automatic configuration of Windows workstations in a corporate environment. It automates network settings, system localization, Windows activation, update installation, and hostname changes.
+PowerShell script for the automatic configuration of Windows server in a corporate environment. It automates network settings, system localization, Windows activation, update installation, and hostname changes.
 
 ## Main Features
 

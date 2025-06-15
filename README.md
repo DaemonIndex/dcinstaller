@@ -40,4 +40,10 @@ PowerShell script for the automatic configuration of Windows workstations in a c
 
 The CSV file must be formatted with the following fields: `NomeHost`, `IpAddress`, `Netmask`, `Gateway`, `DnsServer`, `SystemLocale`, `TimeZone`, `Keyboard`, `ProductKey`, separated by `;`
 
+## License
+
+This project is licensed under the [GNU GPL v3.0](LICENSE).
+
+--- 
+
 > 🇮🇹 Leggi questo README in italiano: [README.it.md](README.it.md)

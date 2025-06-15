@@ -2,7 +2,7 @@
 
 ## Descrizione
 
-Script PowerShell per la configurazione automatica di workstation Windows in ambiente aziendale. Automatizza impostazioni di rete, sistema, attivazione Windows, installazione aggiornamenti e cambio hostname.
+Script PowerShell per la configurazione automatica di server Windows in ambiente aziendale. Automatizza impostazioni di rete, sistema, attivazione Windows, installazione aggiornamenti e cambio hostname.
 
 ## Funzionalità principali
 

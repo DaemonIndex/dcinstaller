@@ -34,7 +34,7 @@ PowerShell script for the automatic configuration of Windows workstations in a c
 
 - Administrator privileges
 
-- Supported Windows 10/Server versions
+- Supported Windows 2008R2
 
 ## Notes
 

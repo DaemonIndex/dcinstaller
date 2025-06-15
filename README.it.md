@@ -32,7 +32,7 @@ Script PowerShell per la configurazione automatica di workstation Windows in amb
 
 - Permessi di amministratore
 
-- Windows 10/Server (versioni supportate)
+- Windows Server 2008R2
 
 ## Note
 Il file CSV deve essere formattato con i campi: NomeHost, IpAddress, Netmask, Gateway, DnsServer, SystemLocale, TimeZone, Keyboard, ProductKey, separati da ;

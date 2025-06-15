@@ -1,14 +1,15 @@
-﻿#Forzo disabilita delle restrizione sugli script
+# Force script execution policy bypass
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Force
-#disabilito UAC
+
+# Disable UAC
 New-ItemProperty -Path HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System -name EnableLUA -PropertyType DWord -Value 0 -Force
 
-#Flag d'esecuzione
+# Execution state flag
 $state = $1
 if($state -eq $null) { $state = 0 }
-Write-host " Controllo Stato Acquisito: $state" 
+Write-host " Execution State Detected: $state" 
 
-#Creazione dei percorsi
+# Paths setup
 $drive = Get-Volume | Where-Object { $_.FileSystemLabel -like "DCINSTA" }
 $drvpath = $drive.DriveLetter + ":\"
 $script = "DCInstaller.ps1"
@@ -16,8 +17,8 @@ $filepath = $drvpath + $script
 $folder = "Config\"
 $file_conf = "BaseData.csv"
 $filepath_conf = $drvpath + $folder + $file_conf
- 
-#Recupero dei dati
+
+# Load configuration data from CSV
 if($state -eq 0){
     $excel = Import-Csv -Delimiter ";" -Path $filepath_conf -Header NomeHost, IpAddress, Netmask, Gateway, DnsServer, SystemLocale, TimeZone, Keyboard, ProductKey
 }
@@ -25,7 +26,7 @@ else{
     $excel = Import-Csv -Delimiter ";" -Path "C:\PS\Config\BaseData.csv" -Header NomeHost, IpAddress, Netmask, Gateway, DnsServer, SystemLocale, TimeZone, Keyboard, ProductKey
 }
 
-#Inizializzazione delle variabili
+# Initialize variables
 $netadapters = Get-NetAdapter
 $HostName = $excel.NomeHost[1]
 $IpAddress = $excel.IpAddress[1]
@@ -37,13 +38,11 @@ $TimeZone = $excel.TimeZone[1]
 $Keyboard = $excel.Keyboard[1]
 $ProductKey = $excel.ProductKey[1]
 
-
 ######################################################################################################################
-#Inizializzazione delle funzioni
+# Functions
 
-#Funzione per la verifica della necessità di riavvio
-function Test-PendingReboot
-{
+# Check for pending reboot status
+function Test-PendingReboot {
  if (Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending" -EA Ignore) { return $true }
  if (Get-Item "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -EA Ignore) { return $true }
  if (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name PendingFileRenameOperations -EA Ignore) { return $true }
@@ -54,22 +53,20 @@ function Test-PendingReboot
      return $true
    }
  }catch{}
- 
  return $false
 }
-write-host "Funzione Test-PendingReboot inizializzata"
+write-host "Test-PendingReboot function initialized"
 
-#funzione per la creazione di una task all'avvio
-Function Set-RebootTask
-{
-    $Trigger= New-ScheduledTaskTrigger -AtStartup # Specify the trigger settings
-    $User= "NT AUTHORITY\SYSTEM" # Specify the account to run the script
-    $Action= New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "C:\PS\DCInstaller.ps1 $state" # Specify what program to run and with its parameters
-    Register-ScheduledTask -TaskName "Reboot-Task" -Trigger $Trigger -User $User -Action $Action -RunLevel Highest –Force # Specify the name of the task
+# Create a scheduled task to run at startup
+Function Set-RebootTask {
+    $Trigger= New-ScheduledTaskTrigger -AtStartup
+    $User= "NT AUTHORITY\SYSTEM"
+    $Action= New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "C:\PS\DCInstaller.ps1 $state"
+    Register-ScheduledTask -TaskName "Reboot-Task" -Trigger $Trigger -User $User -Action $Action -RunLevel Highest -Force
 }
-write-host "Funzione Set-RebootTask inizializzata"
+write-host "Set-RebootTask function initialized"
 
-#installazione dello script in c:\
+# Install script to local path
 $find = dir c:\ | Select-Object -Property Name | where {$_.Name -eq "ps"}
 if($find -eq $null){
     mkdir C:\PS\
@@ -77,115 +74,110 @@ if($find -eq $null){
     cat -Path $filepath | Out-File -FilePath "C:\PS\DCInstaller.ps1"
     cat -Path $filepath_conf | Out-File -FilePath "C:\PS\Config\BaseData.csv"
     Start-Transcript C:\PS\LogFile.txt 
-    Write-host "Stato $state : Installazione dello script eseguito!"
+    Write-host "State $state : Script installation completed!"
     $state++
-}
-else{
+} else {
     $state++ 
 }
-Write-host "Stato 0: Installazione dello script eseguito!"
+Write-host "State 0: Script installation completed!"
 
 while($state -lt 7){
     switch($state){
-        1{
-            #Configurazione scheda di rete
-            Write-Host "Configurazione Network"
+        1 {
+            # Network configuration
+            Write-Host "Network Configuration"
             New-NetIPAddress –IPAddress $IpAddress -DefaultGateway $Gateway -PrefixLength $Netmask -InterfaceIndex (Get-NetAdapter).InterfaceIndex
             Set-DNSClientServerAddress –InterfaceIndex (Get-NetAdapter).InterfaceIndex –ServerAddresses $DnsServer
-            Write-host "disabilito scheda di rete"
+            
+            # Disable network adapters
+            Write-host "Disabling network adapter"
             ForEach($adapt in $netadapters){ 
                 if ($adapt.Status -eq "Enabled"){
-                Write-Host "Disabilito $(($adapt.name))" 
-                Disable-NetAdapter -name $adapt.Name
-                sleep 3
+                    Write-Host "Disabling $($adapt.name)" 
+                    Disable-NetAdapter -name $adapt.Name
+                    sleep 3
                 }
             }
-            
-            Write-host "riabilito scheda di rete"
+
+            # Enable network adapters
+            Write-host "Re-enabling network adapter"
             ForEach($adapt in $netadapters){
                 if ($adapt.Status -eq "Disabled"){
                     Enable-NetAdapter -name $adapt.Name
                     sleep 3
                 }
             }
-            
             $state++
-            Write-host "Stato $state : Configurazione Scheda di rete completata"
+            Write-host "State $state : Network configuration completed"
         }
 
-        2{
-            #Configurazione Systemlocale
-            write-host "Configurazione SystemLocale"
+        2 {
+            # Localization settings
+            write-host "Setting System Locale"
             Set-WinSystemLocale -SystemLocale $SystemLocale
             Set-Culture $SystemLocale 
             Set-TimeZone -Id $TimeZone 
             Set-WinUserLanguageList -LanguageList $Keyboard -Force
-            #modifico orologio
-            #$date = Get-Date
-            #set-date = $date.AddHours(1) 
             $state++
-            Write-host "Stato $state : Configurazione System locale completata" 
-
+            Write-host "State $state : Locale configuration completed" 
         }
 
-        3{
-            #Attivazione di windows
-            write-host "Attivazione di windows"
+        3 {
+            # Windows Activation
+            write-host "Activating Windows"
             $KMSservice = Get-WMIObject -query "select * from SoftwareLicensingService"
             Write-Debug 'Activating Windows.'
             $null = $KMSservice.InstallProductKey($ProductKey)
             $null = $KMSservice.RefreshLicenseStatus()
             $state++
-            Write-host "Stato $state : Attivazione di Windows completata" 
-
+            Write-host "State $state : Windows activation completed" 
         }
 
-        4{
-            #Installazione moduli necessari per lo script
-            write-host "Installazione Modulo WindowsUpdate"
+        4 {
+            # Install required modules
+            write-host "Installing WindowsUpdate module"
             $PSVersionTable.PSVersion
             Install-Module PSWindowsUpdate -Force
             Get-Command -module PSWindowsUpdate
-            Write-host "Registrazione al Servizio"
+            Write-host "Registering update service"
             Add-WUServiceManager -ServiceID 7971f918-a847-4430-9279-4a52d1efe18d -confirm:$false
-            Write-host "Stato $state : Installazione moduli eseguita" 
-
+            Write-host "State $state : Module installation completed" 
             $state++
         }
-        5{
-            #imposto task per riavvio
+
+        5 {
+            # Set reboot task and install updates
             Set-RebootTask
-            Write-host "Stato $state a: Creato Schedule per esecuzione script al riavvio" 
-            #installazione aggiornamenti
+            Write-host "State $state a: Scheduled reboot task created" 
             Get-WUList -MicrosoftUpdate
             Get-WUInstall -MicrosoftUpdate -AcceptAll -Download -Install
             If(Test-PendingReboot){
                 Restart-Computer -Force
             }
-            Write-host "Stato $state b: Aggiornamenti installati" 
-
+            Write-host "State $state b: Updates installed" 
             $state++
         }
 
-        6{
-            #Modifica Hostname
-            if($Hostname -ne $envCOMPUTERNAME){
+        6 {
+            # Hostname change
+            if($Hostname -ne $env:COMPUTERNAME){
                 Set-RebootTask
                 $state++
                 Rename-computer –newname $Hostname –force
                 Restart-Computer -Force
-            }
-            else{
+            } else {
                 $state++
             }
         }
-        default{
+
+        default {
             Write-host "Error.... Error everywhere!!!"
         }
     }
 }
-#riabilito UAC
+
+# Re-enable UAC
 New-ItemProperty -Path HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System -name EnableLUA -PropertyType DWord -Value 1 -Force
-Write-host "Stato 6: Modificato Hostname" 
+Write-host "State 6: Hostname modified" 
 Stop-Transcript
 c:\PS\LogFile.txt
